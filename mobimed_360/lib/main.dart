@@ -1,861 +1,227 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MobiMed360App());
-}
-
-enum MobiMedRole { patient, doctor, hospital, pathology, mediStore }
-
-extension MobiMedRoleLabel on MobiMedRole {
-  String get label {
-    switch (this) {
-      case MobiMedRole.patient:
-        return 'Patient';
-      case MobiMedRole.doctor:
-        return 'Doctor';
-      case MobiMedRole.hospital:
-        return 'Hospital';
-      case MobiMedRole.pathology:
-        return 'Pathology';
-      case MobiMedRole.mediStore:
-        return 'Medi-Store';
-    }
-  }
-}
-
-class CartItem {
-  final String id;
-  final String title;
-  final String providerName;
-  final String category;
-  final double price;
-  int qty;
-
-  CartItem({
-    required this.id,
-    required this.title,
-    required this.providerName,
-    required this.category,
-    required this.price,
-    this.qty = 1,
-  });
-}
+void main() => runApp(const MobiMed360App());
+const teal = Color(0xFF087F75);
+const ink = Color(0xFF173C42);
+const demo = bool.fromEnvironment('DEMO_MODE', defaultValue: true);
 
 class MobiMed360App extends StatelessWidget {
   const MobiMed360App({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MobiMed-360',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0D9488),
-          primary: const Color(0xFF0D9488),
-          secondary: const Color(0xFF2563EB),
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-      ),
-      home: const MobiMedShell(),
-    );
-  }
+  Widget build(BuildContext context) => MaterialApp(
+    title: 'MobiMed 360', debugShowCheckedModeBanner: false,
+    theme: ThemeData(useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(seedColor: teal, primary: teal),
+      scaffoldBackgroundColor: const Color(0xFFF4F8F7),
+      cardTheme: CardThemeData(color: Colors.white, elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+      inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16))),
+    ), home: const MobiMedShell());
+}
+
+class CareService {
+  final String id, category, name, detail, provider;
+  final int cents;
+  final IconData icon;
+  const CareService(this.id, this.category, this.name, this.detail, this.provider, this.cents, this.icon);
+}
+const services = [
+  CareService('d1', 'Doctors', 'Dr. Maya Patel', 'General physician • English, Hindi', 'Example Care Clinic', 3000, Icons.person_outline),
+  CareService('d2', 'Doctors', 'Dr. Daniel Kim', 'Cardiology • English, Korean', 'Example Heart Clinic', 4500, Icons.person_outline),
+  CareService('d3', 'Doctors', 'Dr. Sofia Reed', 'Dermatology • English, Spanish', 'Example Skin Clinic', 3500, Icons.person_outline),
+  CareService('m1', 'Pharmacy', 'Digital thermometer', 'No prescription required', 'Example Community Pharmacy', 1250, Icons.medical_services_outlined),
+  CareService('m2', 'Pharmacy', 'First aid kit', 'Home care essentials', 'Example Community Pharmacy', 1800, Icons.medical_services_outlined),
+  CareService('l1', 'Labs', 'Complete blood count', 'Home collection', 'Example Diagnostics', 2200, Icons.science_outlined),
+  CareService('l2', 'Labs', 'Lipid profile', 'Confirm preparation instructions with your lab', 'Example Diagnostics', 2800, Icons.science_outlined),
+  CareService('h1', 'Hospitals', 'General OPD visit', 'Outpatient consultation', 'Example City Hospital', 2000, Icons.local_hospital_outlined),
+  CareService('h2', 'Hospitals', 'Specialist OPD visit', 'Request a specialist appointment', 'Example Medical Center', 3500, Icons.local_hospital_outlined),
+];
+const categories = ['Doctors', 'Pharmacy', 'Labs', 'Hospitals'];
+const categoryIcons = [Icons.medical_services_outlined, Icons.medication_outlined, Icons.science_outlined, Icons.local_hospital_outlined];
+String money(int cents) => '\$${(cents / 100).toStringAsFixed(2)}';
+class Booking {
+  final CareService service;
+  final DateTime date;
+  bool cancelled = false;
+  Booking(this.service, this.date);
 }
 
 class MobiMedShell extends StatefulWidget {
   const MobiMedShell({super.key});
-
   @override
   State<MobiMedShell> createState() => _MobiMedShellState();
 }
-
 class _MobiMedShellState extends State<MobiMedShell> {
-  // First View: disappears automatically after 3 seconds
-  bool _showFirstViewSplash = true;
-  Timer? _splashTimer;
-
-  // Navigation & Dropdown states (Views 2, 3, 4, 5)
-  String _activeScreen = 'home'; // home, doctors, medistore, pathology, hospital, appointments, checkout, about, support
-  bool _isHamburgerMenuOpen = false; // ||| -> |*| (Third View)
-  bool _isServicesSubmenuOpen = false; // < Services flyout (Third View)
-  bool _isRoleMenuOpen = false; // (@) -> (P) (Fourth View)
-  bool _showAuthModal = false; // Fifth View modal
-
-  // Auth & Role State
-  bool _isLoggedIn = false;
-  MobiMedRole _selectedRole = MobiMedRole.patient;
-  String _userPhoneOrEmail = '';
-  String? _pendingProtectedScreen;
-
-  final List<CartItem> _cart = [
-    CartItem(
-      id: 'MED-1',
-      title: 'Augmentin 625 Duo (10 Tabs)',
-      providerName: 'Apollo Nearest Medi-Store (0.8 km)',
-      category: 'Medi-Store',
-      price: 18.50,
-    ),
-    CartItem(
-      id: 'LAB-1',
-      title: 'Full Body Checkup + HbA1c',
-      providerName: 'Dr. Lal Pathology Center (1.2 km)',
-      category: 'Pathology',
-      price: 49.00,
-    ),
-  ];
-
+  Timer? timer;
+  bool splash = true, signedIn = false;
+  int tab = 0;
+  String category = 'Doctors', query = '', specialty = 'All';
+  final search = TextEditingController();
+  final Map<String, int> cart = {};
+  final List<Booking> bookings = [];
+  final List<String> orders = [];
+  int get total => cart.entries.fold(0, (sum, e) => sum + services.firstWhere((s) => s.id == e.key).cents * e.value);
   @override
   void initState() {
     super.initState();
-    _splashTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() => _showFirstViewSplash = false);
-      }
-    });
+    timer = Timer(const Duration(seconds: 3), () { if (mounted) setState(() => splash = false); });
   }
-
   @override
-  void dispose() {
-    _splashTimer?.cancel();
-    super.dispose();
-  }
-
-  void _navigateTo(String screen, {bool requiresAuth = false}) {
-    setState(() {
-      _isHamburgerMenuOpen = false;
-      _isServicesSubmenuOpen = false;
-      _isRoleMenuOpen = false;
-
-      if (requiresAuth && !_isLoggedIn) {
-        // Third View Rule: "If login then open, otherwise ask to login"
-        _pendingProtectedScreen = screen;
-        _showAuthModal = true;
-      } else {
-        _activeScreen = screen;
-      }
-    });
-  }
-
-  void _selectRoleFromDropdown(MobiMedRole role) {
-    setState(() {
-      _selectedRole = role;
-      _isRoleMenuOpen = false;
-      _isHamburgerMenuOpen = false;
-      _showAuthModal = true; // Opens Fifth View SignUp/Login modal
-    });
-  }
-
-  void _completeLogin(String identifier) {
-    setState(() {
-      _isLoggedIn = true;
-      _userPhoneOrEmail = identifier;
-      _showAuthModal = false;
-      if (_pendingProtectedScreen != null) {
-        _activeScreen = _pendingProtectedScreen!;
-        _pendingProtectedScreen = null;
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Logged in as ${_selectedRole.label} ($identifier)'),
-      ),
-    );
-  }
-
-  void _addToCart(CartItem item) {
-    setState(() {
-      final index = _cart.indexWhere((e) => e.id == item.id);
-      if (index >= 0) {
-        _cart[index].qty += 1;
-      } else {
-        _cart.add(item);
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${item.title} added to cart')),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0F172A),
-            border: Border(bottom: BorderSide(color: Colors.white24)),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  InkWell(
-                    onTap: () => _navigateTo('home'),
-                    child: Row(
-                      children: [
-                        const Text(
-                          'MobiMed-360',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        if (_isLoggedIn) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0D9488),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              _selectedRole.label,
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 11),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      // Cart Shortcut
-                      IconButton(
-                        onPressed: () =>
-                            _navigateTo('checkout', requiresAuth: true),
-                        icon: Badge(
-                          isLabelVisible: _cart.isNotEmpty,
-                          label: Text('${_cart.length}'),
-                          child: const Icon(Icons.shopping_bag_outlined,
-                              color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      // Fourth View Trigger: (@) -> (P)
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _isRoleMenuOpen = !_isRoleMenuOpen;
-                            _isHamburgerMenuOpen = false;
-                          });
-                        },
-                        child: Text(
-                          _isRoleMenuOpen ? '(P)' : '(@)',
-                          style: const TextStyle(
-                            color: Colors.tealAccent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ),
-                      // Third View Trigger: ||| -> |*|
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _isHamburgerMenuOpen = !_isHamburgerMenuOpen;
-                            _isRoleMenuOpen = false;
-                          });
-                        },
-                        child: Text(
-                          _isHamburgerMenuOpen ? '|*|' : '|||',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          // Main Body: Either First View (3s Splash) or Active View
-          _showFirstViewSplash ? _buildFirstViewSplash() : _buildActiveBody(),
-
-          // Third View Overlay: Hamburger Menu (||| -> |*|) + < Services Flyout
-          if (_isHamburgerMenuOpen) _buildThirdViewMenu(),
-
-          // Fourth View Overlay: Role Selector ((@) -> (P))
-          if (_isRoleMenuOpen) _buildFourthViewRoleDropdown(),
-
-          // Fifth View Overlay: SignUp / Login Modal (|G| |A| or Mobile Number)
-          if (_showAuthModal) _buildFifthViewAuthModal(),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================================================
-  // FIRST VIEW: 3-SECOND SPLASH VIEW
-  // ==========================================================================
-  Widget _buildFirstViewSplash() {
-    return Container(
-      width: double.infinity,
-      color: const Color(0xFF0F172A),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            'Welcome\nTo\nMobiMed\n360',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              height: 1.35,
-              fontFamily: 'monospace',
-            ),
-          ),
-          const SizedBox(height: 24),
-          TextButton(
-            onPressed: () => setState(() => _showFirstViewSplash = false),
-            child: const Text(
-              'Auto-entering in 3 sec... (Tap to skip)',
-              style: TextStyle(color: Colors.tealAccent),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================================================
-  // THIRD VIEW: CASCADING HAMBURGER MENU (||| -> |*|)
-  // ==========================================================================
-  Widget _buildThirdViewMenu() {
-    return Positioned(
-      top: 8,
-      right: 16,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_isServicesSubmenuOpen)
-            Card(
-              color: const Color(0xFF1E293B),
-              child: SizedBox(
-                width: 150,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _menuTile('Doctors', () => _navigateTo('doctors')),
-                    _menuTile('Medi-store', () => _navigateTo('medistore')),
-                    _menuTile('Pathology', () => _navigateTo('pathology')),
-                    _menuTile('Hospitals', () => _navigateTo('hospital')),
-                  ],
-                ),
-              ),
-            ),
-          Card(
-            color: const Color(0xFF0F172A),
-            child: SizedBox(
-              width: 180,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _menuTile('Home', () => _navigateTo('home')),
-                  _menuTile(
-                    '< Services',
-                    () => setState(() =>
-                        _isServicesSubmenuOpen = !_isServicesSubmenuOpen),
-                  ),
-                  _menuTile(
-                    'Appointments',
-                    () => _navigateTo('appointments', requiresAuth: true),
-                  ),
-                  _menuTile('About', () => _navigateTo('home')),
-                  _menuTile('Support', () => _navigateTo('home')),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================================================
-  // FOURTH VIEW: 5-ROLE PORTAL DROPDOWN ((@) -> (P))
-  // ==========================================================================
-  Widget _buildFourthViewRoleDropdown() {
-    return Positioned(
-      top: 8,
-      right: 56,
-      child: Card(
-        color: const Color(0xFF0F172A),
-        child: SizedBox(
-          width: 180,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: MobiMedRole.values
-                .map((role) => _menuTile(
-                      '> ${role.label}',
-                      () => _selectRoleFromDropdown(role),
-                    ))
-                .toList(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _menuTile(String title, VoidCallback onTap) {
-    return ListTile(
-      dense: true,
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontFamily: 'monospace',
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      onTap: onTap,
-    );
-  }
-
-  // ==========================================================================
-  // FIFTH VIEW: SIGNUP / LOGIN MODAL (|G| |A| OR MOBILE NUMBER)
-  // ==========================================================================
-  Widget _buildFifthViewAuthModal() {
-    final phoneCtrl = TextEditingController(text: '+1 555-019-2834');
-    return Container(
-      color: Colors.black54,
-      alignment: Alignment.center,
-      padding: const EdgeInsets.all(24),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 360),
-        child: Card(
-          color: const Color(0xFF0F172A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: const BorderSide(color: Colors.white38),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Align(
-                  alignment: Alignment.topRight,
-                  child: InkWell(
-                    onTap: () => setState(() => _showAuthModal = false),
-                    child: const Text(
-                      '*',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                Text(
-                  'SignUp (${_selectedRole.label})',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Continue with',
-                  style: TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    OutlinedButton(
-                      onPressed: () =>
-                          _completeLogin('google.${_selectedRole.name}@mobimed.app'),
-                      child: const Text('|G|',
-                          style: TextStyle(color: Colors.white)),
-                    ),
-                    const SizedBox(width: 12),
-                    OutlinedButton(
-                      onPressed: () =>
-                          _completeLogin('apple.${_selectedRole.name}@mobimed.app'),
-                      child: const Text('|A|',
-                          style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                const Text('or', style: TextStyle(color: Colors.white70)),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: phoneCtrl,
-                  style: const TextStyle(color: Colors.white),
-                  textAlign: TextAlign.center,
-                  decoration: const InputDecoration(
-                    labelText: 'Mobile Number',
-                    labelStyle: TextStyle(color: Colors.white70),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white54),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 22),
-                FilledButton(
-                  onPressed: () => _completeLogin(phoneCtrl.text),
-                  child: const Text('Login'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ==========================================================================
-  // SECOND VIEW & SERVICE SCREENS
-  // ==========================================================================
-  Widget _buildActiveBody() {
-    switch (_activeScreen) {
-      case 'doctors':
-        return _buildDoctorsScreen();
-      case 'medistore':
-        return _buildMediStoreScreen();
-      case 'pathology':
-        return _buildPathologyScreen();
-      case 'hospital':
-        return _buildHospitalScreen();
-      case 'appointments':
-        return _buildAppointmentsAndLiveConsultScreen();
-      case 'checkout':
-        return _buildCheckoutScreen();
-      case 'home':
-      default:
-        return _buildSecondViewHome();
-    }
-  }
-
-  Widget _buildSecondViewHome() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        // Exact Second View Mission Card
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0F172A),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.tealAccent.withOpacity(0.4)),
-          ),
-          child: const Text(
-            '+ MobiMed is an application to help you to reach the best '
-            'global doctors and can book appointment for live consultant '
-            'and purchase the medicine online the nearest medical store '
-            '& find the nearest pathology & online services from Hospital',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              height: 1.5,
-              fontFamily: 'monospace',
-            ),
-          ),
-        ),
+  void dispose() { timer?.cancel(); search.dispose(); super.dispose(); }
+  void notify(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  Future<bool> authenticate() async {
+    if (signedIn) return true;
+    final accepted = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+      title: const Text('Welcome to MobiMed'),
+      content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Text('Your care, all in one place. Browse freely or explore a labelled demo account.'),
         const SizedBox(height: 20),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            _quickServiceCard(
-              icon: Icons.medical_services_outlined,
-              title: 'Global Doctors',
-              subtitle: 'Book appointment for live video consultant',
-              onTap: () => _navigateTo('doctors'),
-            ),
-            _quickServiceCard(
-              icon: Icons.local_pharmacy_outlined,
-              title: 'Nearest Medi-Store',
-              subtitle: 'Purchase medicines online from nearest store',
-              onTap: () => _navigateTo('medistore'),
-            ),
-            _quickServiceCard(
-              icon: Icons.biotech_outlined,
-              title: 'Nearest Pathology',
-              subtitle: 'Home sample collection & smart lab reports',
-              onTap: () => _navigateTo('pathology'),
-            ),
-            _quickServiceCard(
-              icon: Icons.local_hospital_outlined,
-              title: 'Hospital Services',
-              subtitle: 'Online OPD, ICU beds & 24x7 emergency',
-              onTap: () => _navigateTo('hospital'),
-            ),
-          ],
-        ),
-      ],
-    );
+        OutlinedButton.icon(onPressed: () => notify('Google sign-in requires a configured identity service.'), icon: const Icon(Icons.account_circle_outlined), label: const Text('Continue with Google')),
+        OutlinedButton.icon(onPressed: () => notify('Apple sign-in requires a configured identity service.'), icon: const Icon(Icons.apple), label: const Text('Continue with Apple')),
+        OutlinedButton.icon(onPressed: () => notify('SMS verification requires a configured OTP service.'), icon: const Icon(Icons.phone_outlined), label: const Text('Continue with mobile')),
+        const SizedBox(height: 12), const Text('Live sign-in is unavailable. Never enter real health information in demo mode.'),
+      ])), actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+        if (demo) FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Explore demo account'))]));
+    if (!mounted || accepted != true) return false;
+    setState(() => signedIn = true); return true;
   }
-
-  Widget _quickServiceCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return SizedBox(
-      width: 260,
-      child: Card(
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(icon, color: const Color(0xFF0D9488), size: 32),
-                const SizedBox(height: 10),
-                Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 4),
-                Text(subtitle,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  Future<void> navigate(int value) async {
+    if (value >= 2 && !await authenticate()) return;
+    if (mounted) setState(() { tab = value; });
   }
-
-  Widget _buildDoctorsScreen() {
-    final doctors = [
-      ('Dr. Aanya Sharma', 'Global Cardiologist (MD, DM)', 'Apollo Global', 30.0),
-      ('Dr. James Carter', 'Neurologist (Johns Hopkins)', 'Global TeleMed', 45.0),
-      ('Dr. Vikram Nair', 'Internal Medicine Specialist', 'City Care', 20.0),
+  void openCategory(String value) => setState(() { category = value; tab = 1; query = ''; search.clear(); specialty = 'All'; });
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
+    final wide = constraints.maxWidth >= 760;
+    const destinations = [
+      NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+      NavigationDestination(icon: Icon(Icons.grid_view_outlined), label: 'Find care'),
+      NavigationDestination(icon: Icon(Icons.calendar_month_outlined), label: 'Bookings'),
+      NavigationDestination(icon: Icon(Icons.folder_outlined), label: 'Records'),
     ];
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text('Global Doctors — Live Consultant Booking',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ...doctors.map((d) => Card(
-              child: ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.person)),
-                title: Text(d.$1,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('${d.$2} • ${d.$3}'),
-                trailing: FilledButton.icon(
-                  onPressed: () {
-                    _addToCart(CartItem(
-                      id: d.$1,
-                      title: 'Live Consult: ${d.$1}',
-                      providerName: d.$3,
-                      category: 'Doctor',
-                      price: d.$4,
-                    ));
-                    _navigateTo('appointments', requiresAuth: true);
-                  },
-                  icon: const Icon(Icons.videocam, size: 16),
-                  label: Text('Book (\$${d.$4.toInt()})'),
-                ),
-              ),
-            )),
-      ],
-    );
-  }
-
-  Widget _buildMediStoreScreen() {
-    final meds = [
-      ('Augmentin 625 Duo', 'Apollo Medi-Store (0.8 km away)', 18.50),
-      ('Telma 40mg (30 Tabs)', 'MedPlus Pharmacy (1.1 km away)', 14.00),
-      ('Accu-Chek Glucometer', 'Wellness Forever (1.5 km away)', 39.99),
+    return Scaffold(
+      appBar: AppBar(backgroundColor: Colors.white, title: InkWell(onTap: () => navigate(0), child: const Text('MobiMed 360', style: TextStyle(color: ink, fontWeight: FontWeight.w800))),
+        actions: [IconButton(tooltip: 'Care cart', onPressed: checkout, icon: Badge(isLabelVisible: cart.isNotEmpty, label: Text('${cart.values.fold(0, (a, b) => a + b)}'), child: const Icon(Icons.shopping_bag_outlined))),
+          PopupMenuButton<String>(tooltip: 'Profile and portals', icon: const Icon(Icons.account_circle_outlined), onSelected: profile,
+            itemBuilder: (_) => ['Patient', 'Doctor', 'Hospital', 'Pathology', 'Medi-Store', 'Privacy', 'About', 'Support', if (signedIn) 'Sign out', if (signedIn) 'Delete demo data'].map((r) => PopupMenuItem(value: r, child: Text(r))).toList())]),
+      drawer: Drawer(child: SafeArea(child: ListView(children: [const ListTile(title: Text('Your care companion', style: TextStyle(fontWeight: FontWeight.bold))),
+        ListTile(title: const Text('Home'), onTap: () { Navigator.pop(context); navigate(0); }),
+        ExpansionTile(title: const Text('Services'), children: categories.map((c) => ListTile(title: Text(c), onTap: () { Navigator.pop(context); openCategory(c); })).toList()),
+        ListTile(title: const Text('Appointments'), onTap: () { Navigator.pop(context); navigate(2); }),
+        ListTile(title: const Text('Support'), onTap: () { Navigator.pop(context); profile('Support'); })]))),
+      bottomNavigationBar: wide || splash ? null : NavigationBar(selectedIndex: tab, onDestinationSelected: navigate, destinations: destinations),
+      body: SafeArea(child: splash ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.health_and_safety, color: teal, size: 80), const SizedBox(height: 20),
+        const Text('Welcome To MobiMed 360', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: ink)),
+        const SizedBox(height: 12), const Text('A little closer to better care'), TextButton(onPressed: () => setState(() => splash = false), child: const Text('Get started'))])) : Row(children: [
+        if (wide) NavigationRail(selectedIndex: tab, onDestinationSelected: navigate, labelType: NavigationRailLabelType.all,
+          destinations: destinations.map((d) => NavigationRailDestination(icon: d.icon, selectedIcon: d.selectedIcon, label: Text(d.label))).toList()),
+        Expanded(child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1100), child: ListView(padding: EdgeInsets.all(wide ? 32 : 20), children: [
+          const Padding(padding: EdgeInsets.only(bottom: 16), child: Text(demo ? 'DEMO • Sample providers, prices and availability • No real transactions' : 'Live services are not configured in this build', style: TextStyle(fontSize: 12, color: Color(0xFF59696B)))),
+          ...switch (tab) { 0 => home(), 1 => directory(), 2 => appointments(), _ => records() },
+          const SizedBox(height: 24), const Text('For a medical emergency, contact your local emergency service. MobiMed does not provide emergency dispatch.', style: TextStyle(fontSize: 12)),
+        ]))))])));
+  });
+  Widget heading(String text) => Padding(padding: const EdgeInsets.only(bottom: 14), child: Text(text, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: ink)));
+  List<Widget> home() => [
+    const Text('CARE THAT FITS YOUR LIFE', style: TextStyle(color: teal, fontSize: 12, letterSpacing: 2, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 10), const Text('Feel better.\nStart here.', style: TextStyle(fontSize: 38, height: 1.15, color: ink, fontWeight: FontWeight.w800)),
+    const SizedBox(height: 12), const Text('Find a doctor, arrange tests and access everyday healthcare from one calm, connected place.', style: TextStyle(fontSize: 16, height: 1.6)),
+    const SizedBox(height: 24),
+    Container(padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: teal, borderRadius: BorderRadius.circular(24)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.favorite_outline, color: Colors.white, size: 36), const SizedBox(height: 16),
+        const Text('The right care.\nA conversation away.', style: TextStyle(color: Colors.white, fontSize: 27, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10), const Text('Explore specialists and choose a time that works for you.', style: TextStyle(color: Colors.white)), const SizedBox(height: 18),
+        FilledButton.tonal(onPressed: () => openCategory('Doctors'), child: const Text('Find your doctor'))])),
+    const SizedBox(height: 28), heading('How can we help?'),
+    LayoutBuilder(builder: (context, box) {
+      final count = box.maxWidth >= 850 ? 4 : box.maxWidth < 340 ? 1 : 2;
+      return Wrap(spacing: 12, runSpacing: 12, children: List.generate(4, (i) => SizedBox(width: (box.maxWidth - 12 * (count - 1)) / count,
+        child: Card(child: InkWell(borderRadius: BorderRadius.circular(20), onTap: () => openCategory(categories[i]), child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(categoryIcons[i], color: teal, size: 32), const SizedBox(height: 20), Text(categories[i], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          const SizedBox(height: 6), Text(['Book a consultation', 'Everyday essentials', 'Tests & home collection', 'Outpatient services'][i]), const SizedBox(height: 12), const Icon(Icons.arrow_forward, size: 20, color: teal)])))))));
+    }),
+    const SizedBox(height: 24), Card(child: ListTile(contentPadding: const EdgeInsets.all(20), leading: const Icon(Icons.calendar_month, color: teal), title: const Text('Your next step to better health'), subtitle: const Text('Keep appointments in one place.'), onTap: () => navigate(2))),
+  ];
+  List<Widget> directory() {
+    final items = services.where((s) => s.category == category && '${s.name} ${s.detail} ${s.provider}'.toLowerCase().contains(query.toLowerCase()) && (specialty == 'All' || s.detail.contains(specialty))).toList();
+    return [heading('Find your care'), const Text('Sample directory • Location and provider verification are not connected.'), const SizedBox(height: 18),
+      Wrap(spacing: 8, runSpacing: 8, children: categories.map((c) => ChoiceChip(label: Text(c), selected: category == c, onSelected: (_) => openCategory(c))).toList()),
+      const SizedBox(height: 18), TextField(controller: search, onChanged: (v) => setState(() => query = v), decoration: InputDecoration(prefixIcon: const Icon(Icons.search), labelText: 'Search $category')),
+      if (category == 'Doctors') Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Wrap(spacing: 8, children: ['All', 'General', 'Cardiology', 'Dermatology'].map((s) => FilterChip(label: Text(s), selected: specialty == s, onSelected: (_) => setState(() => specialty = s))).toList())),
+      const SizedBox(height: 12), if (items.isEmpty) empty('No matches', 'Try another name or specialty.'),
+      ...items.map((s) => Card(margin: const EdgeInsets.only(bottom: 14), child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [CircleAvatar(backgroundColor: const Color(0xFFE3F2EE), foregroundColor: teal, radius: 26, child: Icon(s.icon)), const SizedBox(width: 14), Expanded(child: Text(s.name, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: ink)))]),
+        const SizedBox(height: 14), Text(s.detail), const SizedBox(height: 6), Text(s.provider, style: const TextStyle(color: Color(0xFF59696B))), const SizedBox(height: 18),
+        Wrap(spacing: 16, runSpacing: 12, crossAxisAlignment: WrapCrossAlignment.center, children: [Text(money(s.cents), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: ink)),
+          FilledButton.icon(onPressed: () => s.category == 'Pharmacy' ? add(s) : book(s), icon: Icon(s.category == 'Pharmacy' ? Icons.add : Icons.calendar_today_outlined, size: 18), label: Text(s.category == 'Pharmacy' ? 'Add to cart' : 'Choose a time'))])]))),
     ];
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text('Nearest Medi-Store — Online Medicine Purchase',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ...meds.map((m) => Card(
-              child: ListTile(
-                leading: const Icon(Icons.medication, color: Color(0xFF0D9488)),
-                title: Text(m.$1,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(m.$2),
-                trailing: FilledButton(
-                  onPressed: () => _addToCart(CartItem(
-                    id: m.$1,
-                    title: m.$1,
-                    providerName: m.$2,
-                    category: 'Medi-Store',
-                    price: m.$3,
-                  )),
-                  child: Text('+ \$${m.$3.toStringAsFixed(2)}'),
-                ),
-              ),
-            )),
-      ],
-    );
   }
-
-  Widget _buildPathologyScreen() {
-    final labs = [
-      ('Full Body Checkup (82 Tests)', 'Dr. Lal PathLabs (1.2 km away)', 49.00),
-      ('HbA1c & Lipid Profile', 'SRL Diagnostics (1.9 km away)', 22.00),
-      ('Thyroid Profile (T3, T4, TSH)', 'Metropolis Lab (2.4 km away)', 15.00),
-    ];
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text('Nearest Pathology Labs & Home Sample Collection',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ...labs.map((l) => Card(
-              child: ListTile(
-                leading: const Icon(Icons.biotech, color: Color(0xFF2563EB)),
-                title: Text(l.$1,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(l.$2),
-                trailing: FilledButton(
-                  onPressed: () => _addToCart(CartItem(
-                    id: l.$1,
-                    title: l.$1,
-                    providerName: l.$2,
-                    category: 'Pathology',
-                    price: l.$3,
-                  )),
-                  child: Text('Book \$${l.$3.toStringAsFixed(0)}'),
-                ),
-              ),
-            )),
-      ],
-    );
+  void add(CareService s) { setState(() => cart.update(s.id, (q) => q + 1, ifAbsent: () => 1)); notify('${s.name} added to your cart'); }
+  Future<void> book(CareService s) async {
+    if (!await authenticate() || !mounted) return;
+    final now = DateTime.now();
+    final day = await showDatePicker(context: context, initialDate: now.add(const Duration(days: 1)), firstDate: DateTime(now.year, now.month, now.day), lastDate: now.add(const Duration(days: 90)));
+    if (day == null || !mounted) return;
+    final time = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 10, minute: 0));
+    if (time == null || !mounted) return;
+    final date = DateTime(day.year, day.month, day.day, time.hour, time.minute);
+    if (!date.isAfter(DateTime.now())) { notify('Please choose a future appointment time.'); return; }
+    if (bookings.any((b) => !b.cancelled && b.date == date)) { notify('You already have a booking at this time.'); return; }
+    final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(title: const Text('Review demo booking'),
+      content: Text('${s.name}\n${dateLabel(date)}\n${money(s.cents)}\n\nSample appointment only. No provider is contacted and no payment is collected.'),
+      actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Back')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Create demo booking'))]));
+    if (confirmed == true && mounted) setState(() { bookings.add(Booking(s, date)); bookings.sort((a, b) => a.date.compareTo(b.date)); tab = 2; });
   }
-
-  Widget _buildHospitalScreen() {
-    final hospitals = [
-      ('Apollo Multi-Specialty Hospital', '1.8 km • 14 ICU Beds Available', 15.0),
-      ('City Care Super Hospital', '3.1 km • 24x7 Emergency & OPD', 12.0),
-    ];
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text('Nearest Hospital Online Services',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ...hospitals.map((h) => Card(
-              child: ListTile(
-                leading:
-                    const Icon(Icons.local_hospital, color: Colors.redAccent),
-                title: Text(h.$1,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(h.$2),
-                trailing: FilledButton(
-                  onPressed: () => _addToCart(CartItem(
-                    id: h.$1,
-                    title: 'OPD Priority Pass: ${h.$1}',
-                    providerName: h.$2,
-                    category: 'Hospital',
-                    price: h.$3,
-                  )),
-                  child: const Text('Book OPD'),
-                ),
-              ),
-            )),
-      ],
-    );
+  String dateLabel(DateTime date) => '${MaterialLocalizations.of(context).formatMediumDate(date)} • ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(date))}';
+  List<Widget> appointments() => [heading('Your bookings'), const Text('Plan your care, one step at a time.'), const SizedBox(height: 20),
+    if (bookings.isEmpty) empty('A fresh start', 'Choose a provider to create your first demo booking.'),
+    ...bookings.map((b) => Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(b.service.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const SizedBox(height: 10), Text(dateLabel(b.date)), Text(b.service.category == 'Doctors' ? 'Video consultation' : b.service.category == 'Labs' ? 'Home collection' : 'In person'),
+      const SizedBox(height: 10), Text(b.cancelled ? 'Cancelled' : 'Demo booking • Not sent to provider', style: const TextStyle(color: teal)),
+      if (!b.cancelled) Wrap(spacing: 12, children: [if (b.service.category == 'Doctors') OutlinedButton.icon(onPressed: () => notify('Video consultations require a configured LiveKit service.'), icon: const Icon(Icons.videocam_outlined), label: const Text('Consultation details')), TextButton(onPressed: () => cancel(b), child: const Text('Cancel booking'))])]))),
+  ];
+  Future<void> cancel(Booking b) async {
+    final yes = await showDialog<bool>(context: context, builder: (context) => AlertDialog(title: const Text('Cancel this demo booking?'), actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep booking')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Cancel booking'))]));
+    if (yes == true && mounted) setState(() => b.cancelled = true);
   }
-
-  Widget _buildAppointmentsAndLiveConsultScreen() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          'Live Appointments (${_selectedRole.label} Portal: $_userPhoneOrEmail)',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          height: 260,
-          decoration: BoxDecoration(
-            color: const Color(0xFF0F172A),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          alignment: Alignment.center,
-          child: const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.videocam, color: Colors.tealAccent, size: 48),
-              SizedBox(height: 8),
-              Text(
-                'Live WebRTC Consultation Room — Dr. Aanya Sharma',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16),
-              ),
-              Text(
-                '● Encrypted HD Stream Connected',
-                style: TextStyle(color: Colors.tealAccent, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+  List<Widget> records() => [heading('Your health records'), empty('Your records belong here', 'No medical records uploaded. Secure reports and prescriptions require the production service.'),
+    const SizedBox(height: 20), heading('Demo orders'), if (orders.isEmpty) const Text('No demo orders yet.'), ...orders.map((o) => Card(child: ListTile(leading: const Icon(Icons.receipt_long_outlined), title: Text(o), subtitle: const Text('Sample order • No payment or delivery'))))];
+  Widget empty(String title, String detail) => Card(child: Padding(padding: const EdgeInsets.all(28), child: Column(children: [const Icon(Icons.health_and_safety_outlined, color: teal, size: 48), const SizedBox(height: 16), Text(title, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold)), const SizedBox(height: 10), Text(detail, textAlign: TextAlign.center)])));
+  Future<void> checkout() async {
+    if (!await authenticate() || !mounted) return;
+    await showDialog<void>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, update) => AlertDialog(
+      title: const Text('Your care cart'), content: SizedBox(width: 440, child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (cart.isEmpty) const Text('Your cart is empty.'),
+        ...cart.entries.toList().map((e) { final s = services.firstWhere((s) => s.id == e.key); return Padding(padding: const EdgeInsets.only(bottom: 16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)), Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+            IconButton(tooltip: 'Decrease ${s.name}', onPressed: () { setState(() { if (e.value == 1) { cart.remove(e.key); } else { cart[e.key] = e.value - 1; } }); update(() {}); }, icon: const Icon(Icons.remove_circle_outline)), Text('${e.value}'),
+            IconButton(tooltip: 'Increase ${s.name}', onPressed: () { setState(() => cart[e.key] = e.value + 1); update(() {}); }, icon: const Icon(Icons.add_circle_outline)), Text(money(s.cents * e.value))]) ])); }),
+        const Divider(), Text('Total ${money(total)}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)), const SizedBox(height: 12), const Text('Demo checkout only. No funds collected. Live payments and delivery are not configured.'),
+      ]))), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close')),
+        FilledButton(onPressed: cart.isEmpty || !demo ? null : () { setState(() { orders.insert(0, 'Demo order ${orders.length + 1} • ${money(total)}'); cart.clear(); }); Navigator.pop(dialogContext); notify('Demo order created. No payment was taken.'); }, child: const Text('Create demo order'))])));
   }
-
-  Widget _buildCheckoutScreen() {
-    final total = _cart.fold<double>(0, (s, i) => s + i.price * i.qty);
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text('Unified Checkout & Payment Gateway',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ..._cart.map((c) => Card(
-              child: ListTile(
-                title: Text(c.title),
-                subtitle: Text('${c.category} • ${c.providerName}'),
-                trailing:
-                    Text('\$${(c.price * c.qty).toStringAsFixed(2)}'),
-              ),
-            )),
-        const Divider(),
-        ListTile(
-          title: const Text('Total Payable',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          trailing: Text('\$${total.toStringAsFixed(2)}',
-              style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        ),
-        FilledButton(
-          onPressed: () {
-            setState(() => _cart.clear());
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Payment Confirmed!')),
-            );
-          },
-          child: const Text('Pay Now (UPI / Card / Apple Pay)'),
-        ),
-      ],
-    );
+  Future<void> profile(String value) async {
+    if (value == 'Sign out') { setState(() { signedIn = false; tab = 0; }); return; }
+    if (value == 'Delete demo data') {
+      final yes = await showDialog<bool>(context: context, builder: (context) => AlertDialog(title: const Text('Delete all demo data?'), content: const Text('Removes sample bookings, orders, cart and your demo session.'), actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep data')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete data'))]));
+      if (yes == true && mounted) setState(() { bookings.clear(); orders.clear(); cart.clear(); signedIn = false; tab = 0; }); return;
+    }
+    if (['Privacy', 'About', 'Support'].contains(value)) {
+      await info(value, switch (value) {
+        'Privacy' => 'This demo keeps sample bookings and orders in memory for this running app session. It does not authenticate users, collect payment, upload health records or access location. Do not enter real health information. The production privacy policy must identify the operator, data use, retention and deletion process before launch.',
+        'About' => 'MobiMed 360 connects doctor discovery, pharmacy essentials, diagnostic bookings and hospital services. This evaluation build has fictional sample providers. It does not provide medical advice.',
+        _ => 'Live support is not configured. Before launch, provide a monitored support contact and account deletion webpage. For urgent medical needs contact your local emergency service.' }); return;
+    }
+    if (!await authenticate() || !mounted) return;
+    if (value == 'Patient') { navigate(0); return; }
+    await info('$value portal preview', switch (value) {
+      'Doctor' => 'Availability, appointment queues and prescriptions require a verified doctor account. Client role selection never grants clinical access.',
+      'Hospital' => 'Bed and OPD management require a verified facility account. No real availability is published in this demo.',
+      'Pathology' => 'Test catalog, collection assignments and report uploads require a verified lab account.',
+      _ => 'Inventory, prescription review and dispatch require a verified pharmacy account.' });
   }
+  Future<void> info(String title, String body) => showDialog<void>(context: context, builder: (context) => AlertDialog(title: Text(title), content: SingleChildScrollView(child: Text(body)), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))]));
 }
