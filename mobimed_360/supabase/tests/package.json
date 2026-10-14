@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node check.mjs && node payments_test.mjs" },
+  "devDependencies": { "@electric-sql/pglite": "0.5.10" }
+}

@@ -1,42 +1,62 @@
-# MobiMed-360 — Cross-Platform Healthcare Application
+# MobiMed 360
 
-> *"MobiMed is an application to help you to reach the best global doctors and can book appointment for live consultant and purchase the medicine online the nearest medical store & find the nearest pathology & online services from Hospital."*
+A responsive Flutter healthcare application for phones, tablets and web, with Android and iOS projects. The default build is a clearly labelled, local demonstration. A separate connected build supports Supabase accounts, verified-provider discovery, available-slot bookings, order requests and provider operations.
 
----
+**Status:** runnable demo and configurable connected application; not a deployed clinical service or store submission. No paid accounts or services have been created. Video consultations, clinical documents and live online payments remain disabled.
 
-## 📚 Project Documentation Index
+## Run the preview
 
-| # | Document | Description |
-| :--- | :--- | :--- |
-| **01** | [**Product Requirements (`01_PRODUCT_REQUIREMENTS.md`)**](./docs/01_PRODUCT_REQUIREMENTS.md) | Vision, exact 5 Wireframe Views (`First View` to `Fifth View`), 5 Stakeholder Personas (`Patient`, `Doctor`, `Hospital`, `Pathology`, `Medi-Store`), and KPIs. |
-| **02** | [**Technical Requirements (`02_TECHNICAL_REQUIREMENTS.md`)**](./docs/02_TECHNICAL_REQUIREMENTS.md) | Jev AI tech selection (Flutter + LiveKit WebRTC + PostGIS + Stripe/Razorpay), lightweight binary budgets, and system architecture. |
-| **03** | [**Security & Access (`03_SECURITY_AND_ACCESS.md`)**](./docs/03_SECURITY_AND_ACCESS.md) | Google (`\|G\|`) & Apple (`\|A\|`) OAuth2, Mobile OTP, `Appointments` route guard (*"If login then open, otherwise ask to login"*), and 5-Role RBAC matrix. |
-| **04** | [**Front-End Architecture (`04_FRONTEND_ARCHITECTURE.md`)**](./docs/04_FRONTEND_ARCHITECTURE.md) | Wireframe-to-widget mapping (`(@)` $\rightarrow$ `(P)`, `\|\|\|` $\rightarrow$ `\|*\|`, `< Services` flyout, 3s splash timer), state machine, and folder structure. |
-| **05** | [**Backend Architecture (`05_BACKEND_ARCHITECTURE.md`)**](./docs/05_BACKEND_ARCHITECTURE.md) | PostgreSQL + PostGIS ER diagram, `ST_DWithin` nearest Medi-Store/Pathology/Hospital query, and REST/WebSocket API endpoints. |
-| **06** | [**Feature Tickets (`06_FEATURE_TICKETS.md`)**](./docs/06_FEATURE_TICKETS.md) | Sprint-ready engineering backlog (`MM-101` through `MM-206`) with story points, priorities, and acceptance criteria. |
-
----
-
-## 📱 Wireframe Views Implemented (`Views 1–5`)
-
-1. **First View (`3-Sec Splash`)**: Displays `MobiMed-360` header with `(@)` and `|||` icons and centered `"Welcome To MobiMed 360"`, disappearing automatically after 3 seconds.
-2. **Second View (`Home & Discovery`)**: Displays the MobiMed-360 mission statement and quick access to Global Doctors, Nearest Medi-Store, Nearest Pathology, and Hospital Online Services.
-3. **Third View (`||| -> |*| Hamburger Menu & < Services Flyout`)**: Opens `Home`, `< Services` (expanding `Doctors`, `Medi-store`, `Pathology`, `Hospital`), `Appointments` (**auto-checks login state and prompts login if unauthenticated**), `About`, and `Support`.
-4. **Fourth View (`(@) -> (P) 5-Role Switcher`)**: Opens the role selector (`> Patient`, `> Doctor`, `> Hospital`, `> Pathology`, `> Medi-Store`).
-5. **Fifth View (`SignUp / Login Modal`)**: Dismissible (`*`) modal with `Continue with |G| |A| or Mobile Number` and `Login` action.
-
----
-
-## 🚀 Quick Start
-
-### 1. Run the Instant Interactive 5-View Prototype (Web / Mobile Browser)
-Open [`web_preview/index.html`](./web_preview/index.html) in any browser:
 ```powershell
-Start-Process "C:\Users\Admin\.gemini\antigravity\scratch\mobimed_360\web_preview\index.html"
+X:\MobiMed-360\.tools\flutter\bin\flutter.bat run -d chrome
 ```
 
-### 2. Run the Native Cross-Platform Flutter App ([`lib/main.dart`](./lib/main.dart))
+The built web app can be served locally:
+
 ```powershell
-flutter pub get
-flutter run
+python -m http.server 8765 --bind 127.0.0.1 --directory build/web
 ```
+
+Open http://127.0.0.1:8765. Install it from the browser's app/install menu where supported. The web shell caches public assets only; authenticated backend responses are never cached. Offline connected bookings require a network connection. Demo data lasts for the running app session.
+
+## Connected build
+
+Create a free Supabase project, apply the migration in `supabase/migrations`, configure Auth and onboard verified providers. Then:
+
+```powershell
+flutter run -d chrome --dart-define=DEMO_MODE=false --dart-define-from-file=config/backend.json
+```
+
+Copy `config/backend.example.json` to `config/backend.json` and set the project URL and **publishable** key. Never use a service-role key in the app. Sessions are memory-only. Clinical record collection is disabled.
+
+The account's Cross-Question organization was confirmed to be on the Free plan. Cloud project provisioning could not be completed: the connector's required `get_cost` tool is unavailable and the CLI has no authenticated access token. No unrelated project was modified.
+
+## Features
+
+- Medical visual theme, editable app icon, phone bottom navigation and tablet navigation rail.
+- Searchable doctors, pharmacy essentials, diagnostic and hospital service directories.
+- Demo date/time selection, duplicate-time checks, appointment cancellation, cart quantities, order history and data reset.
+- Four demo provider workspaces; connected workspaces require server-assigned ownership and verified providers.
+- Connected email registration/sign-in, recovery, published-slot requests, cancellation, pharmacy inventory and hospital capacity updates.
+- Database row-level security, atomic bookings, server-priced orders, stock rollback, deletion request capture and multiple currency minor units.
+- Optional Stripe **test-only** checkout adapter. It rejects live keys and never marks an order paid.
+- Android/iOS/web configuration and validation workflows. Android release builds require real upload-key configuration.
+
+## Validation
+
+```powershell
+flutter analyze
+flutter test
+cd supabase/tests
+npm ci
+npm test
+```
+
+Database tests use in-memory PostgreSQL through PGlite with mocked Supabase identity functions. They exercise RLS, unauthorized access, duplicate booking, server pricing, stock and cancellation. They do not validate hosted Auth, SMTP, deployment, concurrent network requests or clinical compliance.
+
+## Documentation
+
+- `docs/07_PONYTAIL_AUDIT.md`: requested complexity audit.
+- `docs/08_IMPLEMENTATION_REVIEW.md`: review of all original requirements and implementation status.
+- `docs/09_RELEASE.md`: free release path, backend setup, signing and remaining launch gates.
+- `docs/01` through `docs/06`: original requirements, retained as source documents. Claims of an encrypted live stream, sub-8-MB app size or completed payment integration are not verified release claims.
+- `docs/original-main.dart.txt` and `docs/original-preview.html.txt`: archived prototype sources.

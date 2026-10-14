@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,21 +18,25 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="MobiMed 360 healthcare application preview.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="mobimed_360">
+  <meta name="apple-mobile-web-app-title" content="MobiMed 360">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>mobimed_360</title>
+  <title>MobiMed 360</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <div id="app-loading" style="position:fixed;inset:0;display:grid;place-content:center;text-align:center;background:#f4f8f7;color:#173c42;font-family:system-ui;z-index:9999">
+    <div style="font-size:32px;font-weight:800">MobiMed 360</div>
+    <p>Preparing your care companion…</p>
+  </div>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
@@ -42,5 +46,8 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+  </script>
 </body>
 </html>

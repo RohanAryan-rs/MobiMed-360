@@ -3,3 +3,4 @@
 **/.env
 **/*.jks
 **/key.properties
+**/config/backend.json

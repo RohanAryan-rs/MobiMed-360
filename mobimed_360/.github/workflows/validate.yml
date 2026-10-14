@@ -1,0 +1,64 @@
+name: Validate application
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build web --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobimed-web-preview
+          path: build/web
+  android-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build apk --debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobimed-android-demo
+          path: build/app/outputs/flutter-apk/app-debug.apk
+  ios-compile:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign
+  database-and-payments:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: supabase/tests/package-lock.json
+      - run: npm ci
+        working-directory: supabase/tests
+      - run: npm test
+        working-directory: supabase/tests
