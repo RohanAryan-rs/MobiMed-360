@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MobiMed-360 — Interactive Application & 5-View Wireframe Implementation</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --card: #111827;
+      --border: #334155;
+      --teal: #14b8a6;
+      --teal-glow: rgba(20, 184, 166, 0.2);
+      --blue: #3b82f6;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace, sans-serif; }
+    body {
+      background: #020617;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 12px;
+    }
+
+    /* Quick View Switcher Bar above Phone Frame for testing all 5 Wireframes */
+    .wireframe-bar {
+      max-width: 920px;
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 14px;
+      margin-bottom: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .wf-btn {
+      background: #0f172a;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .wf-btn:hover, .wf-btn.active {
+      border-color: var(--teal);
+      background: var(--teal-glow);
+      color: #5eead4;
+    }
+
+    /* Mobile Device Frame */
+    .phone-frame {
+      width: 100%;
+      max-width: 460px;
+      min-height: 690px;
+      background: var(--bg);
+      border: 2px solid #475569;
+      border-radius: 26px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+    }
+
+    /* Persistent Header: | MobiMed-360       (@) ||| | */
+    .app-header {
+      padding: 16px 18px;
+      border-bottom: 1px dashed #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0b1120;
+      z-index: 40;
+    }
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .role-pill {
+      font-size: 10px;
+      background: var(--teal);
+      color: #020617;
+      padding: 2px 7px;
+      border-radius: 99px;
+      font-weight: 800;
+    }
+    .header-icons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .icon-trigger {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .icon-trigger:hover, .icon-trigger.open {
+      border-color: var(--teal);
+      color: #5eead4;
+      background: var(--teal-glow);
+    }
+
+    /* Main Viewport inside Phone */
+    .viewport {
+      flex: 1;
+      padding: 20px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    /* FIRST VIEW: 3-Sec Splash */
+    .splash-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .splash-title {
+      font-size: 28px;
+      line-height: 1.45;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+    .countdown-tag {
+      margin-top: 24px;
+      font-size: 12px;
+      color: #5eead4;
+      background: var(--teal-glow);
+      border: 1px solid var(--teal);
+      padding: 6px 14px;
+      border-radius: 99px;
+    }
+
+    /* THIRD VIEW: Hamburger Dropdown (||| -> |*|) + < Services Flyout */
+    .menu-overlay {
+      position: absolute;
+      top: 58px;
+      right: 14px;
+      display: none;
+      align-items: flex-start;
+      z-index: 50;
+    }
+    .menu-overlay.open { display: flex; }
+    .submenu-box {
+      background: #111827;
+      border: 1px solid #64748b;
+      border-right: none;
+      margin-top: 34px;
+      min-width: 135px;
+      display: none;
+      flex-direction: column;
+    }
+    .submenu-box.open { display: flex; }
+    .mainmenu-box {
+      background: #0f172a;
+      border: 1px solid #94a3b8;
+      min-width: 165px;
+      display: flex;
+      flex-direction: column;
+    }
+    .menu-item {
+      padding: 10px 14px;
+      color: #f8fafc;
+      font-size: 14px;
+      border-bottom: 1px solid #1e293b;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .menu-item:hover {
+      background: var(--teal-glow);
+      color: #5eead4;
+    }
+
+    /* FOURTH VIEW: Role Selector Dropdown ((@) -> (P)) */
+    .role-overlay {
+      position: absolute;
+      top: 58px;
+      right: 54px;
+      background: #0f172a;
+      border: 1px solid #94a3b8;
+      min-width: 165px;
+      display: none;
+      flex-direction: column;
+      z-index: 50;
+    }
+    .role-overlay.open { display: flex; }
+
+    /* FIFTH VIEW: Centered SignUp / Login Modal */
+    .auth-modal-backdrop {
+      position: absolute;
+      inset: 58px 0 0 0;
+      background: rgba(2, 6, 23, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 60;
+    }
+    .auth-modal-backdrop.open { display: flex; }
+    .auth-box {
+      width: 100%;
+      max-width: 290px;
+      background: #0b1120;
+      border: 1px dashed #cbd5e1;
+      padding: 22px 20px;
+      text-align: center;
+      position: relative;
+    }
+    .close-star {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .oauth-row {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin: 16px 0;
+    }
+    .oauth-btn {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid #94a3b8;
+      padding: 8px 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .oauth-btn:hover { border-color: var(--teal); color: #5eead4; }
+    .mobile-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px dashed #cbd5e1;
+      color: #fff;
+      text-align: center;
+      padding: 8px 4px;
+      font-size: 14px;
+      margin: 10px 0 20px;
+      outline: none;
+    }
+    .login-submit-btn {
+      background: var(--teal);
+      color: #020617;
+      border: none;
+      padding: 10px 28px;
+      font-weight: 800;
+      font-size: 15px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* Content Cards */
+    .pitch-box {
+      border: 1px dashed #475569;
+      padding: 16px;
+      line-height: 1.65;
+      font-size: 14px;
+      color: #e2e8f0;
+      margin-bottom: 18px;
+      background: rgba(30, 41, 59, 0.45);
+    }
+    .service-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-action {
+      background: var(--teal);
+      color: #020617;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      background: var(--teal);
+      color: #020617;
+      padding: 10px 18px;
+      border-radius: 99px;
+      font-weight: 800;
+      font-size: 13px;
+      display: none;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Wireframe Inspector Bar (Jump directly to any of the 5 Views) -->
+  <div class="wireframe-bar">
+    <span style="font-size:12px; color:#94a3b8; font-weight:700;">Wireframe Views:</span>
+    <button class="wf-btn" onclick="triggerFirstView()">1️⃣ First View (3s Splash)</button>
+    <button class="wf-btn" onclick="triggerSecondView()">2️⃣ Second View (Home)</button>
+    <button class="wf-btn" onclick="triggerThirdView()">3️⃣ Third View (||| Menu &lt; Services)</button>
+    <button class="wf-btn" onclick="triggerFourthView()">4️⃣ Fourth View ((P) Roles)</button>
+    <button class="wf-btn" onclick="triggerFifthView()">5️⃣ Fifth View (SignUp / Login)</button>
+  </div>
+
+  <!-- MobiMed-360 Mobile App Frame -->
+  <div class="phone-frame">
+    <!-- Persistent Top Bar -->
+    <header class="app-header">
+      <div class="brand-title" onclick="triggerSecondView()">
+        <span>MobiMed-360</span>
+        <span class="role-pill" id="headerRoleBadge">Guest</span>
+      </div>
+      <div class="header-icons">
+        <button class="icon-trigger" id="cartBtn" onclick="openProtectedScreen('checkout')" title="Cart / Checkout">
+          🛒(<span id="cartCount">2</span>)
+        </button>
+        <button class="icon-trigger" id="roleBtn" onclick="toggleRoleMenu()" title="Role Portal Selector">(@)</button>
+        <button class="icon-trigger" id="menuBtn" onclick="toggleHamburgerMenu()" title="Navigation Menu">|||</button>
+      </div>
+    </header>
+
+    <!-- THIRD VIEW: Cascading Hamburger Menu (||| -> |*|) -->
+    <div class="menu-overlay" id="hamburgerOverlay">
+      <!-- Left Flyout Submenu (< Services) -->
+      <div class="submenu-box" id="servicesSubmenu">
+        <div class="menu-item" onclick="showServiceScreen('doctors')">|Doctors</div>
+        <div class="menu-item" onclick="showServiceScreen('medistore')">|Medi-store</div>
+        <div class="menu-item" onclick="showServiceScreen('pathology')">|Pathology</div>
+        <div class="menu-item" onclick="showServiceScreen('hospital')">|Hospital</div>
+      </div>
+      <!-- Right Primary Menu -->
+      <div class="mainmenu-box">
+        <div class="menu-item" onclick="triggerSecondView()">|Home</div>
+        <div class="menu-item" onclick="toggleServicesSubmenu()">
+          <span>&lt; Services</span>
+          <span style="color:#5eead4;">!!!!!!</span>
+        </div>
+        <div class="menu-item" onclick="openProtectedScreen('appointments')" title="If login then open, otherwise ask to login">
+          |Appointments 🔒
+        </div>
+        <div class="menu-item" onclick="showServiceScreen('about')">|About</div>
+        <div class="menu-item" onclick="showServiceScreen('support')">|Support</div>
+      </div>
+    </div>
+
+    <!-- FOURTH VIEW: 5-Role Dropdown ((@) -> (P)) -->
+    <div class="role-overlay" id="roleOverlay">
+      <div class="menu-item" onclick="chooseRole('Patient')">&gt; Patient</div>
+      <div class="menu-item" onclick="chooseRole('Doctor')">&gt; Doctor</div>
+      <div class="menu-item" onclick="chooseRole('Hospital')">&gt; Hospital</div>
+      <div class="menu-item" onclick="chooseRole('Pathology')">&gt; Pathology</div>
+      <div class="menu-item" onclick="chooseRole('Medi-Store')">&gt; Medi-Store</div>
+    </div>
+
+    <!-- FIFTH VIEW: SignUp / Login Modal -->
+    <div class="auth-modal-backdrop" id="authModal">
+      <div class="auth-box">
+        <span class="close-star" onclick="closeAuthModal()">*</span>
+        <div style="text-decoration:underline; font-weight:800; font-size:18px; margin-bottom:6px;">
+          SignUp
+        </div>
+        <div style="font-size:13px; color:#cbd5e1;" id="authRoleSubtitle">
+          Continue with (<span id="targetRoleName">Patient</span>)
+        </div>
+        <div class="oauth-row">
+          <button class="oauth-btn" onclick="completeLogin('Google OAuth')">|G|</button>
+          <button class="oauth-btn" onclick="completeLogin('Apple ID')">|A|</button>
+        </div>
+        <div style="font-size:13px; color:#94a3b8;">or</div>
+        <input class="mobile-input" id="mobileInput" placeholder="Mobile Number" value="+1 555-019-2834" />
+        <div>
+          <button class="login-submit-btn" onclick="completeLogin(document.getElementById('mobileInput').value)">
+            Login
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Screen Viewport -->
+    <main class="viewport" id="mainViewport"></main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let isLoggedIn = false;
+    let currentRole = 'Patient';
+    let currentUser = '';
+    let pendingRoute = null;
+    let splashInterval = null;
+
+    let cart = [
+      { id: 'M1', name: 'Augmentin 625 Duo (10 Tabs)', provider: 'Nearest Medi-Store (0.8 km)', price: 18.50 },
+      { id: 'L1', name: 'Full Body Checkup (82 Tests)', provider: 'Nearest Pathology Lab (1.2 km)', price: 49.00 }
+    ];
+
+    function showToast(text) {
+      const t = document.getElementById('toast');
+      t.textContent = text;
+      t.style.display = 'block';
+      clearTimeout(window._tTimer);
+      window._tTimer = setTimeout(() => { t.style.display = 'none'; }, 2600);
+    }
+
+    function closeMenus() {
+      document.getElementById('hamburgerOverlay').classList.remove('open');
+      document.getElementById('servicesSubmenu').classList.remove('open');
+      document.getElementById('roleOverlay').classList.remove('open');
+      document.getElementById('menuBtn').textContent = '|||';
+      document.getElementById('menuBtn').classList.remove('open');
+      document.getElementById('roleBtn').textContent = '(@)';
+      document.getElementById('roleBtn').classList.remove('open');
+    }
+
+    // 1. FIRST VIEW: 3-Second Auto-Disappearing Splash
+    function triggerFirstView() {
+      closeMenus();
+      closeAuthModal();
+      clearInterval(splashInterval);
+      let remaining = 3;
+      const vp = document.getElementById('mainViewport');
+      const renderSplash = () => {
+        vp.innerHTML = `
+          <div class="splash-view">
+            <div class="splash-title">
+              Welcome<br/>To<br/><span style="text-decoration:underline; text-decoration-color:#ef4444;">MobiMed</span><br/>360
+            </div>
+            <div class="countdown-tag">First View — disappears in ${remaining} sec</div>
+          </div>
+        `;
+      };
+      renderSplash();
+      splashInterval = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(splashInterval);
+          triggerSecondView();
+        } else {
+          renderSplash();
+        }
+      }, 1000);
+    }
+
+    // 2. SECOND VIEW: Home Mission & Nearest Services
+    function triggerSecondView() {
+      clearInterval(splashInterval);
+      closeMenus();
+      closeAuthModal();
+      const vp = document.getElementById('mainViewport');
+      vp.innerHTML = `
+        <div class="pitch-box">
+          + <u>MobiMed</u> is an application to help you to reach the best
+          global doctors and can book appointment for live consul-tant
+          and purchase the medicine online the nearest medical store
+          &amp; find the nearest pathology &amp; online services from Hospital
+        </div>
+
+        <div style="font-size:12px; color:#5eead4; margin-bottom:10px; font-weight:700;">
+          QUICK ACCESS SERVICES (OR USE ||| MENU &amp; (@) ROLE SWITCHER):
+        </div>
+
+        <div class="service-card">
+          <div>
+            <div style="font-weight:800;">👨‍⚕️ Global Doctors &amp; Live Consultant</div>
+            <div style="font-size:12px; color:var(--muted);">Instant HD WebRTC Video Consultations</div>
+          </div>
+          <button class="btn-action" onclick="showServiceScreen('doctors')">Open</button>
+        </div>
+
+        <div class="service-card">
+          <div>
+            <div style="font-weight:800;">💊 Nearest Medi-Store (0.8 km)</div>
+            <div style="font-size:12px; color:var(--muted);">Order medicines online &amp; upload Rx</div>
+          </div>
+          <button class="btn-action" onclick="showServiceScreen('medistore')">Shop</button>
+        </div>
+
+        <div class="service-card">
+          <div>
+            <div style="font-weight:800;">🧬 Nearest Pathology Lab (1.2 km)</div>
+            <div style="font-size:12px; color:var(--muted);">Home sample collection &amp; smart PDF reports</div>
+          </div>
+          <button class="btn-action" onclick="showServiceScreen('pathology')">Book</button>
+        </div>
+
+        <div class="service-card">
+          <div>
+            <div style="font-weight:800;">🏥 Nearest Hospital Services (1.8 km)</div>
+            <div style="font-size:12px; color:var(--muted);">Live ICU/Bed status &amp; online OPD booking</div>
+          </div>
+          <button class="btn-action" onclick="showServiceScreen('hospital')">View</button>
+        </div>
+      `;
+    }
+
+    // 3. THIRD VIEW: Hamburger Menu (||| -> |*|) + < Services Flyout
+    function toggleHamburgerMenu() {
+      const overlay = document.getElementById('hamburgerOverlay');
+      const isOpen = overlay.classList.contains('open');
+      closeMenus();
+      if (!isOpen) {
+        overlay.classList.add('open');
+        document.getElementById('servicesSubmenu').classList.add('open');
+        const btn = document.getElementById('menuBtn');
+        btn.textContent = '|*|';
+        btn.classList.add('open');
+      }
+    }
+
+    function toggleServicesSubmenu() {
+      document.getElementById('servicesSubmenu').classList.toggle('open');
+    }
+
+    function triggerThirdView() {
+      triggerSecondView();
+      toggleHamburgerMenu();
+    }
+
+    // 4. FOURTH VIEW: Role Selector ((@) -> (P))
+    function toggleRoleMenu() {
+      const overlay = document.getElementById('roleOverlay');
+      const isOpen = overlay.classList.contains('open');
+      closeMenus();
+      if (!isOpen) {
+        overlay.classList.add('open');
+        const btn = document.getElementById('roleBtn');
+        btn.textContent = '(P)';
+        btn.classList.add('open');
+      }
+    }
+
+    function triggerFourthView() {
+      triggerSecondView();
+      toggleRoleMenu();
+    }
+
+    function chooseRole(role) {
+      currentRole = role;
+      closeMenus();
+      openAuthModal(role);
+    }
+
+    // 5. FIFTH VIEW: SignUp / Login Modal
+    function openAuthModal(roleName) {
+      document.getElementById('targetRoleName').textContent = roleName || currentRole;
+      document.getElementById('authModal').classList.add('open');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.remove('open');
+    }
+
+    function triggerFifthView() {
+      triggerSecondView();
+      openAuthModal(currentRole);
+    }
+
+    function completeLogin(methodOrMobile) {
+      isLoggedIn = true;
+      currentUser = methodOrMobile;
+      document.getElementById('headerRoleBadge').textContent = `${currentRole} ✓`;
+      closeAuthModal();
+      showToast(`Logged in as ${currentRole} via ${methodOrMobile}`);
+      if (pendingRoute) {
+        const next = pendingRoute;
+        pendingRoute = null;
+        showServiceScreen(next);
+      } else {
+        showServiceScreen('appointments');
+      }
+    }
+
+    // Auth Guard Rule from Third View: "If login then open, otherwise ask to login"
+    function openProtectedScreen(screen) {
+      closeMenus();
+      if (!isLoggedIn) {
+        pendingRoute = screen;
+        showToast('Please login first to access ' + screen.toUpperCase());
+        openAuthModal(currentRole);
+      } else {
+        showServiceScreen(screen);
+      }
+    }
+
+    function addToCart(name, provider, price) {
+      cart.push({ id: 'ITEM-' + Date.now(), name, provider, price });
+      document.getElementById('cartCount').textContent = cart.length;
+      showToast(`Added "${name}" to Cart`);
+    }
+
+    function showServiceScreen(screen) {
+      clearInterval(splashInterval);
+      closeMenus();
+      const vp = document.getElementById('mainViewport');
+
+      if (screen === 'doctors') {
+        vp.innerHTML = `
+          <h3 style="margin-bottom:12px; color:#5eead4;">👨‍⚕️ Global Doctors (Live Consultant)</h3>
+          <div class="service-card">
+            <div>
+              <div style="font-weight:800;">Dr. Aanya Sharma (Cardiologist)</div>
+              <div style="font-size:12px; color:var(--muted);">Apollo Global • Available Now for Live Video</div>
+            </div>
+            <button class="btn-action" onclick="addToCart('Live Consult: Dr. Aanya Sharma', 'Global Doctors', 30); openProtectedScreen('appointments')">Book $30</button>
+          </div>
+          <div class="service-card">
+            <div>
+              <div style="font-weight:800;">Dr. James Carter (Neurologist)</div>
+              <div style="font-size:12px; color:var(--muted);">Johns Hopkins TeleMed • Next Slot 11:30 AM</div>
+            </div>
+            <button class="btn-action" onclick="addToCart('Live Consult: Dr. James Carter', 'Global Doctors', 45); openProtectedScreen('appointments')">Book $45</button>
+          </div>
+        `;
+      } else if (screen === 'medistore') {
+        vp.innerHTML = `
+          <h3 style="margin-bottom:12px; color:#5eead4;">💊 Nearest Medi-Store (GPS Sorted)</h3>
+          <div class="service-card">
+            <div>
+              <div style="font-weight:800;">Augmentin 625 Duo Tablet</div>
+              <div style="font-size:12px; color:var(--muted);">Apollo Medi-Store • 0.8 km away (20 min delivery)</div>
+            </div>
+            <button class="btn-action" onclick="addToCart('Augmentin 625 Duo', 'Apollo Medi-Store (0.8 km)', 18.50)">+ $18.50</button>
+          </div>
+          <div class="service-card">
+            <div>
+              <div style="font-weight:800;">Telma 40 (Telmisartan 30 Tabs)</div>
+              <div style="font-size:12px; color:var(--muted);">MedPlus Pharmacy • 1.1 km away</div>
+            </div>
+            <button class="btn-action" onclick="addToCart('Telma 40mg', 'MedPlus (1.1 km)', 14.00)">+ $14.00</button>
+          </div>
+        `;
+      } else if (screen === 'pathology') {
+        vp.innerHTML = `
+          <h3 style="margin-bottom:12px; color:#5eead4;">🧬 Nearest Pathology Labs</h3>
+          <div class="service-card">
+            <div>
+              <div style="font-weight:800;">Full Body Checkup (82 Tests)</div>
+              <div style="font-size:12px; color:var(--muted);">Dr. Lal PathLabs • 1.2 km • Home Sample Collection</div>
+            </div>
+            <button class="btn-action" onclick="addToCart('Full Body Checkup', 'Dr. Lal PathLabs (1.2 km)', 49.00)">Book $49</button>
+          </div>
+          <div class="service-card">
+            <div>
+              <div style="font-weight:800;">HbA1c &amp; Lipid Profile Panel</div>
+              <div style="font-size:12px; color:var(--muted);">SRL Diagnostics • 1.9 km • Report in 6 hrs</div>
+            </div>
+            <button class="btn-action" onclick="addToCart('HbA1c & Lipid Panel', 'SRL Diagnostics (1.9 km)', 22.00)">Book $22</button>
+          </div>
+        `;
+      } else if (screen === 'hospital') {
+        vp.innerHTML = `
+          <h3 style="margin-bottom:12px; color:#5eead4;">🏥 Nearest Hospital Online Services</h3>
+          <div class="service-card">
+            <div>
+              <div style="font-weight:800;">Apollo Multi-Specialty Hospital</div>
+              <div style="font-size:12px; color:var(--muted);">1.8 km away • 14 ICU Beds Available • 24x7 Emergency</div>
+            </div>
+            <button class="btn-action" onclick="addToCart('Hospital OPD Pass', 'Apollo Hospital (1.8 km)', 15.00)">OPD $15</button>
+          </div>
+          <div class="service-card">
+            <div>
+              <div style="font-weight:800;">City Care Super Specialty</div>
+              <div style="font-size:12px; color:var(--muted);">3.1 km away • 9 ICU Beds Available • Cashless Desk</div>
+            </div>
+            <button class="btn-action" onclick="addToCart('Hospital OPD Pass', 'City Care (3.1 km)', 12.00)">OPD $12</button>
+          </div>
+        `;
+      } else if (screen === 'appointments') {
+        vp.innerHTML = `
+          <h3 style="margin-bottom:10px; color:#5eead4;">📹 Live Appointments (${currentRole} Portal)</h3>
+          <div style="background:#111827; border:1px solid var(--teal); border-radius:16px; padding:20px; text-align:center; margin-bottom:14px;">
+            <div style="font-size:42px; margin-bottom:8px;">👩‍⚕️</div>
+            <div style="font-weight:800;">Live WebRTC Video Call — Dr. Aanya Sharma</div>
+            <div style="font-size:12px; color:#5eead4; margin:6px 0 14px;">● Encrypted HD Stream Connected (04:12)</div>
+            <div style="display:flex; justify-content:center; gap:10px;">
+              <button class="wf-btn" onclick="showToast('Mic Toggled')">🎤 Mic</button>
+              <button class="wf-btn" onclick="showToast('Camera Toggled')">📷 Cam</button>
+              <button class="wf-btn" style="border-color:#ef4444; color:#fca5a5;" onclick="triggerSecondView()">📞 End</button>
+            </div>
+          </div>
+          <div class="pitch-box" style="font-size:12px;">
+            <strong>Digital E-Prescription (#RX-360):</strong><br/>
+            • Tab. Augmentin 625mg BD × 5 days<br/>
+            • HbA1c &amp; Lipid Profile test advised
+          </div>
+        `;
+      } else if (screen === 'checkout') {
+        const total = cart.reduce((s, i) => s + i.price, 0);
+        vp.innerHTML = `
+          <h3 style="margin-bottom:12px; color:#5eead4;">💳 Unified Checkout &amp; Payment</h3>
+          ${cart.map(c => `
+            <div class="service-card">
+              <div>
+                <div style="font-weight:800; font-size:13px;">${c.name}</div>
+                <div style="font-size:11px; color:var(--muted);">${c.provider}</div>
+              </div>
+              <span style="font-weight:800; color:#5eead4;">$${c.price.toFixed(2)}</span>
+            </div>
+          `).join('')}
+          <div style="display:flex; justify-content:space-between; font-weight:800; margin:14px 0;">
+            <span>Total Payable</span>
+            <span style="color:#5eead4; font-size:18px;">$${total.toFixed(2)}</span>
+          </div>
+          <button class="btn-action" style="width:100%; padding:12px; font-size:14px;" onclick="cart=[]; document.getElementById('cartCount').textContent='0'; showToast('Payment Successful! Order Confirmed.'); triggerSecondView();">
+            🔒 Pay $${total.toFixed(2)} (UPI / Card / Apple Pay)
+          </button>
+        `;
+      } else {
+        vp.innerHTML = `
+          <h3 style="margin-bottom:10px; color:#5eead4;">ℹ️ ${screen.toUpperCase()} — MobiMed-360</h3>
+          <div class="pitch-box">
+            MobiMed-360 24x7 Global Telemedicine, Hyperlocal Pharmacy, Pathology &amp; Hospital Support Desk.<br/><br/>
+             Helpline: 1800-MOBIMED-360
+          </div>
+        `;
+      }
+    }
+
+    // Start on First View (3-Second Auto-Disappearing Splash Screen)
+    triggerFirstView();
+  </script>
+</body>
+</html>

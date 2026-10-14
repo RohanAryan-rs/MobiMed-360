@@ -1,0 +1,20 @@
+name: mobimed_360
+description: MobiMed-360 Cross-Platform Healthcare Application (Doctors, Medi-Store, Pathology, Hospital, Live Consult & Checkout)
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

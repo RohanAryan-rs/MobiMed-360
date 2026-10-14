@@ -1,0 +1,141 @@
+First View - disappear in 3 sec
+
+--------------------------------
+| MobiMed-360          (@) ||| |  
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|           Welcome            |
+|             To               |
+|           MobiMed            |
+|             360              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|______________________________|
+
+
+Second View -
+
+--------------------------------
+| MobiMed-360          (@) ||| |
+|                              |
+|                              |
+| + MobiMed is an application  |
+| to help you to reach the best|
+| global doctors and can book  |
+| appointment for live consul-tant
+| and purchase the medicine online
+| the the nearest medical store|
+| & find the nearest pathology |
+| & online services from Hospital
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|______________________________|
+
+
+Third View -
+--------------------------------
+| MobiMed-360          (@) |*| |
+|                              |
+|                 |Home        |
+|       !!!!!!   < Services    |
+|      |Doctors   |Appointments| If login then open, otherwise ask to login
+|      |Medi-store|About       |
+|      |Pathology |Support     |
+|      |etc       |etc         |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|______________________________|
+
+
+fourth View -
+--------------------------------
+| MobiMed-360          (P) ||| |
+|                  > Patient   |
+|                  > Doctor    |
+|                  > Hospital  |
+|                  > Pathology |
+|                  > Medi-Store|
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|______________________________|
+
+Fifth View -
+
+--------------------------------
+| MobiMed-360          (@) ||| |  
+|                              |
+|                              |
+|     --------------------     |
+|     |                 *|     |
+|     |     SignUp       |     |
+|     |  Continue with   |     |
+|     |                  |     |
+|     |     |G||A|       |     |
+|     |                  |     |
+|     |       or         |     |
+|     |                  |     |
+|     |  Mobile Number   |     |
+|     |                  |     |
+|     | ---------------- |     |
+|     |                  |     |
+|     |     Login        |     |
+|     |                  |     |
+|     |__________________|     |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|                              |
+|______________________________|
